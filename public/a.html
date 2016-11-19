@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, initial-scale=1.0, user-scalable=no">
+	<title>前端异常与错误追踪</title>
+	<link rel="stylesheet" href="http://cdn.famanoder.com/stylesheets/page/fonticon.css">
+	<script src="http://localhost:2333/ErrorInspector.js"></script>	
+	<script src="http://cdn.famanoder.com/javascripts/lib/jquery0.js"></script>
+	<script src="http://localhost:2333/http.js"></script>
+	<!-- ErrorInspector.Config must before at all where you need to inspect -->
+
+	<script src="http://localhost:2333/socket.io.js"></script>
+	<style>
+	*{padding: 0;margin:0;box-sizing: border-box;font-family: '微软雅黑';}
+	html{font-size: 62.5%;}
+	html,body{width: 100%;height:100%;}
+	/* body{background: url(http://localhost:2333/images/bg.jpg) no-repeat;background-size: 100% 100%;background-position: 0 0;} */
+	.fl{float: left;}
+	nav{height:50px;width:100%;background: rgba(0,0,0,0.8);position: fixed;top:0;left:0;}
+	.zan-music{height:30px;margin-top:9px;margin-left:20px;margin-right:15px;border: 1px solid #111B1B;border-radius: 3px;background: rgba(58,66,64,0.7);box-shadow: 0 1px 0 rgba(98,107,103,0.65) inset;padding: 5px 10px;}
+	.zan {font-size: 13px;color: #B3C2C0;cursor: pointer;}
+	.zan .icon {font-size: 18px;margin-right: 5px;margin-top: 1px;float: left;}
+	.zan:hover,.hf:hover,.sets,.hftxt:hover{color:#30D3C2;cursor: pointer;}
+	.zan .icon,.hf,.sets,.inpt{-webkit-transition: all 0.35s ease-out;
+		-o-transition: all 0.35s ease-out;
+		transition: all 0.35s ease-out;}
+	.zan:hover .icon{-webkit-transform: rotate(-20deg);
+	-ms-transform: rotate(-20deg);
+	-o-transform: rotate(-20deg);
+	transform: rotate(-20deg);}
+	.fl{float: left;}
+	.fr{float: right;}
+	.hf,.sets{font-size: 1.4rem;line-height: 50px;color: #B3C2C0;text-decoration: none;    padding: 0 15px;}
+	.sets{position: relative;}
+	.setings{position: absolute;width: 200px;background-color: #EEFAFF;color: #777;border: 1px solid #B3F7F0;padding: 8px 10px 10px;font-size: 12px;top: 50px;left: -66px;border-top: 2px solid #30D3C2;-webkit-transform-origin: 50% 0;
+	-moz-transform-origin: 50% 0;
+	-ms-transform-origin: 50% 0;
+	-o-transform-origin: 50% 0;
+	transform-origin: 50% 0;
+	-webkit-transform: scale(1,0);
+	-ms-transform: scale(1,0);
+	-o-transform: scale(1,0);
+	transform: scale(1,0);
+	-webkit-transition: all .4s ease-out;
+	-o-transition: all .4s ease-out;
+	transition: all .4s ease-out;}
+	.sets:hover .setings{
+		-webkit-transform: scale(1,1);
+		-ms-transform: scale(1,1);
+		-o-transform: scale(1,1);
+		transform: scale(1,1);
+	}
+	.inptvd{vertical-align: sub;}
+	label{vertical-align: middle;margin-right: 5px;cursor: pointer;}
+	.set{line-height: 24px;}
+	.tra{position: absolute;width:0;height: 0;border-style:solid;}
+	.tra1{top:-17px;left:85px;border-width: 8px 10px;border-color: transparent transparent #30D3C2 transparent;}
+	.tra2{top:-12px;left:87px;border-width: 6px 8px;border-color: transparent transparent #EEFAFF transparent;}
+	.inpt{width: 105px;padding: 2px;height: 1em;line-height: 1em;box-sizing: content-box;color: #666;border: 1px solid #ccc;box-shadow: 1px 1px 3px #F1EEEE inset;outline: 0;}
+	.inpt:focus{box-shadow: 0 0 5px #7DF3E6;border: 1px solid #30D3C2;}
+	.tip{line-height: 20px;color: #aaa;}
+	.char{padding: 0 2px;border: 1px solid #30D3C2;margin: 0 2px;background-color: #CDF9F9;}
+	.err{height:24px;line-height: 24px;font-size: 12px;color: #666;padding: 0 10px;border-bottom: 1px solid #eee;}
+	.class_collect {
+		border:1px #21b57 solid;
+		border-radius:5px;
+		-webkit-border-radius:5px;
+		 -moz-transition: all 0.5s ease-in;
+        -webkit-transition: all 0.5s ease-in;
+        -o-transition: all 0.5s ease-in;
+        transition: all 0.5s ease-in;
+        position: relative;
+        display: block;
+        width:210px; 
+        height: 50px;
+        line-height:50px;
+        margin: 0 auto;
+        color: #21b57e;
+        background: #fff;
+        font-size: 16px;
+	}
+	.class_collect > span:after{
+		content: "";
+        display: block;
+        width:210px; 
+        height: 50px;
+        border-radius: 5px;
+        -moz-border-radius: 5px;
+        -o-border-radius:5px;
+        -webkit-border-radius: 5px;
+        position: absolute;
+        left: 0;
+        top: 0;
+	}
+	.class_collect:hover > span:after{
+        animation:a_post_item_1 0.5s ease both;
+        -moz-animation:a_post_item_1 0.5s ease both;
+        -webkit-animation:a_post_item_1 0.5s ease both;
+    }
+    .collection-top .point:hover > span:after{
+        animation:a_post_item_1 0.5s ease both;
+        -moz-animation:a_post_item_1 0.5s ease both;
+        -webkit-animation:a_post_item_1 0.5s ease both;
+    }
+    @-moz-keyframes a_post_item_1{
+        0%{
+            box-shadow:0px 0px 0px 0px rgba(255,255,255,1);
+            -webkit-box-shadow:0px 0px 0px 0px rgba(255,255,255,1);
+        }
+        100%{
+            box-shadow:0px 0px 0px 12px rgba(84,203,207,0);
+            -webkit-box-shadow:0px 0px 0px 12px rgba(84,203,207,0);
+        }
+    }
+    @-webkit-keyframes a_post_item_1{
+        0%{
+            box-shadow:0px 0px 0px 0px rgba(255,255,255,1);
+            -webkit-box-shadow:0px 0px 0px 0px rgba(255,255,255,1);
+        }
+        100%{
+            box-shadow:0px 0px 0px 12px rgba(84,203,207,0);
+            -webkit-box-shadow:0px 0px 0px 12px rgba(84,203,207,0);
+        }
+    }
+    .icon-check-empty{font-size: 15px;cursor: pointer;margin: 5px 10px 0 0;}
+    .icon-check-empty:hover{color: #33f3de;}
+    .icon-signal{margin: 6px 2px 0 0;}
+    .hot{margin-right: 10px;}
+    .icon-signal,.hot{color: #f9215b;}
+    .time,.browser{margin-right: 10px;}
+    .browser{padding: 0px 2px;height: 17px;line-height: 17px;border-radius: 3px;margin-top: 3px;}
+    .nice-browser{background:#29f53a ;color:#1dad7f;}
+    .bs-browser{background:#ddd;color:#bbb;text-decoration: line-through;}
+    .red{color: #f35151;font-weight: 700;}
+	</style>
+</head>
+<body>
+	<nav>
+		<a href="http://famanoder.com">
+			<img src="http://cdn.famanoder.com/images/logo.png" alt="famanoder-logo" width=160 height=50 class="fl">
+		</a>
+		<div class="zan-music fr">
+			<div title="3881人已赞" class="zan fl">
+				<div class="icon icon-thumbs-up-alt"></div>
+				<span>赞（<span style="font-family:'Georgia';">3881</span>）</span>
+			</div>
+		</div>
+		<a href="http://famanoder.com/suggests" class="fr hf">反馈</a>
+		<div class="sets fr">
+			<div class="hftxt">设置</div>
+			<div class="setings">
+				<div class="tra tra1"></div>
+				<div class="tra tra2"></div>
+				<!-- <p class="tip">***多个关联人使用<span class="char">& , |</span>隔开</p>
+				<div class="set">关联他人：
+					<input type="text" class="inpt">
+				</div> -->
+				<div class="set">实时显示：
+					<input type="radio" class="inptvd" name="news" id="new1" checked="checked">
+					<label for="new1">是</label>
+					<input type="radio" class="inptvd" name="news" id="new2">
+					<label for="new2">否</label>
+				</div>
+				<div class="set">邮件提醒：
+					<input type="radio" class="inptvd" name="mail" id="mail1">
+					<label for="mail1">是</label>
+					<input type="radio" class="inptvd" name="mail" id="mail2" checked="checked">
+					<label for="mail2">否</label>
+				</div>
+				<div class="set">展现方式：
+					<input type="radio" class="inptvd" name="showtp" id="showtp1">
+					<label for="showtp1">列表</label>
+					<input type="radio" class="inptvd" name="showtp" id="showtp2" checked="checked">
+					<label for="showtp2">H5</label>
+				</div>
+			</div>
+		</div>
+	</nav>
+	<!-- <div class="bg" style="position: absolute;top:100px;left:100px;bottom:100px;right:100px;background:#ccc;"></div> -->
+	<div class="class_collect"><span></span>
+saassasassa
+	</div>
+	<div class="errs">
+		
+	</div>
+	<script>
+		ErrorInspector.Config={
+			url:'http://localhost:2333/ErrorInspector/xiaofeng',
+			qs:{
+				ext:'hufeng'
+			},
+			// IgnoreFromJSPattern:/2333/i,
+			IgnoreMsgPattern:/\{.+\}/i,
+			IgnoreBrowserError:0
+		}
+		// ErrorInspector.report({
+		// 	a:1,b:2
+		// });
+		var socket = io.connect("http://localhost:2333");
+		var user=location.pathname.replace(/.*\/(\w+)$/i,'$1');
+		var item=[
+			'<div class="err" style="background:{isNew};">',
+				'<i class="fl icon icon-check-empty"></i>',
+				'<i class="fl icon icon-signal" style="opacity:{opacity}"></i>',
+				'<div style="opacity:{opacity}" class="fl hot">{hot}</div>',
+				'<div class="fl time">{time}</div>',
+				'<div class="fl browser {browserType}">{browser}</div>',
+				'<div class="fl msg">{msg}</div>',
+			'</div>'
+		].join('');
+		function smTempl(mp,conf){
+			for(var c in conf){
+				var reg=new RegExp('{'+c+'}','g');
+				mp=mp.replace(reg,conf[c]);
+			}
+			return mp;
+		}
+		function fmtOp(x){
+			var n=x.replace(/([^%]+)%$/,'$1');
+			return Math.ceil(n/20)*0.2;
+		}
+		function render(data){
+			return $.map(data,function(err){
+				var bro=Math.random()>0.5?err.browser:(Math.random()>0.5?'IE/11':'IE/9.0');
+				var good=/chrome|firefox|opera|safari|(?:ie\/\d{2})/i.test(bro);
+				var reg=/([\w\s]+:)(.*)/;
+				var msg=err.msg.match(reg)?err.msg.replace(reg,'<i class="red">$1</i><u>$2</u>'):err.msg;
+				return smTempl(item,{
+					isNew:err.new?'#ffc5c5':'transparent',
+					opacity:fmtOp(Math.random()>0.5?'5%':'50%'),
+					hot:'5%',
+					time:err.time,
+					browser:bro,
+					browserType:(good?'nice':'bs')+'-browser',
+					msg:msg
+				})
+			});
+		}
+		socket.on('connect', function () {
+			socket.emit('sendUserName',user);
+			socket.on('show',function(data) {
+				console.log(data)
+				if (data.data.length) {
+					$('.errs').append(render(data.data).join(''));
+				};
+			});
+			socket.on('new_error',function(data){
+				document.title='程序出错啦！！！';
+				var err=render(data.data).join('');
+				$('.err').length?$('.err:first').before(err):$('.errs').append(err);
+			});
+		});
+	// document.onmousemove=function(e){
+	// 	document.querySelector('.bg').style.transform='translate('+(e.clientX-document.body.clientWidth/2)/(document.body.clientWidth/2)*30+'px,'+(e.clientY-document.body.clientHeight/2)/(document.body.clientHeight/2)*30+'px)';
+	// }
+
+	document.body.onclick=function(e){s
+		ErrorInspector.log({
+			type:e.type,
+			tag:e.target.tagName,
+			clas:e.target.className
+		});
+		ErrorInspector.tryit(function(rep){
+			as
+		});
+	}
+	// window.onerror=function(a,b,c){
+	// }
+	// 	console.log(a)
+	// 	new Image().src='http://cfdf/sa';
+	// 	return true;
+	// }
+	// acx
+	var tryEvts=function(){
+		console.log(this)
+	}
+	
+	</script>
+</body>
+</html>

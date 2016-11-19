@@ -1,0 +1,201 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('ace2error:server');
+var http = require('http');
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '2333');
+app.set('port', port);
+var  mongodb = require('mongodb');
+var  dbserver  = new mongodb.Server('localhost', 27017, {auto_reconnect:true});
+var  db = new mongodb.Db('error', dbserver, {safe:true});
+var mysocket=null;
+var openCollection=function(name,fn){
+  db.open(function(err,db){
+    err&&console.log(err);
+    db.collection(name,{safe:true},function(err,collection){
+      fn&&fn(collection);
+    });
+  }); 
+}
+var getArgType=function(arg){
+  return Object.prototype.toString.call(arg).match(/\s(\w+)/)[1].toLowerCase();
+}
+var extend=function(){
+  // extend(target,{},{},...)
+  var objs=arguments;
+  if (objs.length<=1) return objs[0];
+  
+  var _extend=function(a,b){
+    if (getArgType(b)=='object') {
+      for(var j in b){
+        if(getArgType(b[j])=='object'){
+          a[j]=_extend(a[j]||{},b[j]);
+        }else{
+          a[j]=b[j];
+        }
+      }
+    };
+    return a;
+  }
+  var res=_extend({},objs[0]);//原对象不可更改
+  for(var i=1;i<objs.length;i++) _extend(res,objs[i]);
+  return res;
+}
+app.get('/ErrorInspector/:name',function (req,res,next) {
+  var query=req.query;
+  // res.json(query);
+  // return false;
+  if (!query.name) query.name=req.params['name'];
+  if (query.id&&query.msg) {
+    query=extend(query,{
+      new:1,
+      solved:0,
+      counts:1,
+      times:[query.time]
+    });
+    openCollection('badjs',function(coll){
+      coll.insert(query,function(){
+        if (mysocket) {
+          console.log(query)
+          mysocket.emit('new_error',{data:[query]});
+        }
+        db.close();
+        res.json(query);
+      });
+    });
+  }else{
+    res.send('bad query!');
+  };
+     
+});
+app.get('/errors/:name',function (req,res,next) {
+  require('../createweb')(req,res,next); 
+});
+// // catch 404 and forward to error handler
+// app.use(function(req, res, next) {
+//   var err = new Error('Not Found');
+//   err.status = 404;
+//   next(err);
+// });
+
+// // error handlers
+
+// // development error handler
+// // will print stacktrace
+// if (app.get('env') === 'development') {
+//   app.use(function(err, req, res, next) {
+//     res.status(err.status || 500);
+//     res.render('error', {
+//       message: err.message,
+//       error: err
+//     });
+//   });
+// }
+
+// // production error handler
+// // no stacktraces leaked to user
+// app.use(function(err, req, res, next) {
+//   res.status(err.status || 500);
+//   res.render('error', {
+//     message: err.message,
+//     error: {}
+//   });
+// });
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+var sio=require('socket.io');
+io=sio.listen(server);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+io.on('connection', function(socket) {
+    console.log('connection');
+    mysocket=socket;
+    socket.on('sendUserName',function(user){
+      openCollection('badjs',function(coll){
+        coll.find({name:user}).toArray(function(err,bads){
+          db.close();
+          socket.emit('show',{data:bads});
+        });
+      });
+    });
+    
+    
+  });
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
