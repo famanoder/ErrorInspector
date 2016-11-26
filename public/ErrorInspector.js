@@ -103,6 +103,9 @@
 				browser:util.Browser,
 				time:util.fmtTime()
 			},
+			$:{
+				timeout:60000
+			},
 			IgnoreFromJSPattern:null,
 			IgnoreMsgPattern:null,
 			IgnoreBrowserError:false
@@ -190,19 +193,33 @@
 		ErrorInspector.report(cfs);
 		return ErrorInspector.getConfs().IgnoreBrowserError;
 	}
-
+	win.Tryit=function(fn){
+        ErrorInspector.tryit(fn);
+    }
 		//友情提示
 		window.onload=function(){
 			var conf=ErrorInspector.getConfs();
 			if (window.console&&window.console.warn) {
-				if(conf.IgnoreBrowserError) console.warn('"IgnoreBrowserError:true" will hide all error in console');
+				if(conf.IgnoreBrowserError) console.warn('"IgnoreBrowserError:true" will hide all error in console (IE no error alert)');
 				if(util.getArgType(conf.IgnoreMsgPattern)=='regexp') console.warn('IgnoreMsgPattern:'+conf.IgnoreMsgPattern+' will ignore some error match this pattern');
 				if(util.getArgType(conf.IgnoreFromJSPattern)=='regexp') console.warn('IgnoreFromJSPattern:'+conf.IgnoreFromJSPattern+' will ignore some error match this pattern');
 			};
+			if(window.$){
+				var setajax=conf;
+				if(setajax.$) {
+					$.ajaxSetup({
+						timeout:setajax.$.timeout,
+						error: function(jqXHR){
+							setTimeout(function () {
+								util.getArgType(setajax.$.onError)=='function'?setajax.$.onError(jqXHR):alert(jqXHR.status+'，'+jqXHR.statusText);
+							}, 1);					
+						}
+					});
+				}
+			}
 		}
 
 
 
 
 }(window));
-
