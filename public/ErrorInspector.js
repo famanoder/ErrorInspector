@@ -44,7 +44,7 @@
 			var agrs=arguments,
 				_stringify=function(o){
 					var q=[];
-					for(var a in o) q.push(a+'='+encodeURIComponent(o[a]));
+					for(var a in o) q.push(a+'='+encodeURIComponent(JSON?JSON.stringify(o[a]):o[a]));
 					return q.join('&');
 				};
 			if (agrs) {
@@ -178,6 +178,7 @@
 			try{
 				fn&&fn(this.report,this.log);
 			}catch(e){
+				if (!this.defConfs.IgnoreBrowserError&&window.console) console.error(e);
 				this.report(util.extend(this.parseErrorStack(e),{inspector:'user_try'}));
 			}
 		}
@@ -206,7 +207,14 @@
                         setTimeout(function () {
                             util.getArgType(setajax.$.onError)=='function'?setajax.$.onError(jqXHR):alert(jqXHR.status+'，'+jqXHR.statusText);
                         }, 1);					
-                    }
+                    },
+                    beforeSend: function(jqXHR){
+                    	if (window.navigator.onLine!=undefined&&window.navigator.onLine==false) {
+                    		jqXHR.abort();
+                    		alert('net::ERR_INTERNET_DISCONNECTED');
+                    		if (window.console&&window.console.error) console.error('net::ERR_INTERNET_DISCONNECTED');
+                    	}
+					}
                 });
             }
         });
