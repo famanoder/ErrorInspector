@@ -17,3 +17,12 @@
 	b. 启动 => `node start version`
 	
 	c. 列出所有版本文件 => `node start [xxx]`
+
+### 2、全站js模块入口：
+* main.js
+	a.各页面所需js模块的配置 => `staticFilesConf`
+	
+	b.各页面所需js模块的预加载 => `preloadModules`
+```javascript
+	new Image().src=src;
+```
