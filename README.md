@@ -20,9 +20,11 @@
 
 ### 2、全站js模块入口：
 * main.js
+
 	a.各页面所需js模块的配置 => `staticFilesConf`
 	
 	b.各页面所需js模块的预加载 => `preloadModules`
 ```javascript
+	// 原因很多，百度
 	new Image().src=src;
 ```
