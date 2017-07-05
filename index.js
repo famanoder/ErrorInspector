@@ -251,5 +251,5 @@
  * @type {Object}
  */
 // ErrorInspector.Config={
-//     url:'https://www.famanoder.com/errors/commom'
+//     url:'//host/errors'
 // }
