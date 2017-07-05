@@ -2,6 +2,7 @@
  * @author famanoder
  * ErrorInspector.js
  * support IE7+ && other browsers
+ * https://famanoder.com/?boke=5867eea54aee37201fb4d1cc
  */
 
 ;(function(win){
