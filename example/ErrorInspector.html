@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>ErrorInspectorJS example</title>
+	<script src="../index.js"></script>
+	<script>
+	ErrorInspector.Config={
+		qs:{
+			id:new Date().getTime(),
+			asd:123
+		},
+	    submit:function(q,qs,errs){
+	    	this.showErrors(errs);
+	    }
+	}
+	</script>
+</head>
+<body>
+<div id="a">123</div>
+	<script src="./a.js"></script>
+	<script>
+	document.getElementById('a').onclick=function(){
+		alert(s)
+	}
+	setTimeout(function(){
+		b();
+	},1);
+	a();
+
+	</script>
+</body>
+</html>

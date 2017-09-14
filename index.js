@@ -1,13 +1,35 @@
 /**
  * @author famanoder
  * ErrorInspector.js
- * support IE7+ && other browsers
+ * support IE7+ && modern browsers
  * https://famanoder.com/?boke=5867eea54aee37201fb4d1cc
  */
 
 ;(function(win){
+	/**
+	 * v1.0.0
+	 * include before your js files and after some libraries
+	 * have a set ErrorInspector.Config={...}
+	 * include : [
+		  ErrorInspector:Object,
+		  window.onerror,
+		  Tryit|tryCatch|try_catch:Function,
+		  Jquery ajaxSetup:[error,timeout,beforeSend]
+	   ]
+	 * default use nwe Image().src to report errors 
+	 * you can use submit(q:Object,qs:String,errs:Array) as you need
+	 */
+
+	/**
+	 * v1.0.1
+	 * add a simple view
+	 * ErrorInspector.Config.submit:function(q:Object,qs:String,errs:Array){
+	 *   this.showErrors(errs);
+	 * }
+	 */
+	var version='1.0.1';
 	
-	win.util=function(){
+	var util=function(){
 		var getArgType=function(arg){
 			return Object.prototype.toString.call(arg).match(/\s(\w+)/)[1].toLowerCase();
 		}
@@ -93,18 +115,39 @@
 	            fn&&fn(1);
 	        }
 	    }
+	    var cssTextify=function(cs){
+			function cssifyObj(obj){
+				var arr=[];
+				for(var css in obj){
+					var attr=css;
+					if (/[A-Z]/.test(css)) {
+						attr=css.replace(/[A-Z]/g,function(a){
+							return '-'+a.toLowerCase();
+						});
+					}
+					arr.push(attr+':'+obj[css]);
+				}
+				return arr.join(';');
+			}
+			return typeof cs==='string'?
+				cs:
+				getArgType(cs)==='object'?
+				cssifyObj(cs):
+				''
+		}
 		return {
 			getArgType:getArgType,
 			extend:extend,
 			Browser:Browser,
 			stringifyQuery:stringifyQuery,
 			fmtTime:fmtTime,
-			loadScript:load
+			loadScript:load,
+			cssTextify:cssTextify
 		}
 	}();
 	win.ErrorInspector={
 		defConfs:{
-			url:'http://www.famanoder.com/error/common',
+			url:'http://localhost:8090/error/common',
 			qs:{
 				id:location.host,
 				page:location.host+location.pathname,
@@ -118,6 +161,7 @@
 			IgnoreMsgPattern:null,
 			IgnoreBrowserError:false
 		},
+		errs:[],
 		Config:{},
 		getConfs:function(){
 			return util.extend(this.defConfs,this.Config);
@@ -133,7 +177,7 @@
 		},
 		parseErrorStack:function(err){
 			if (err.stack) {
-				var _err=err.stack.match(/at\s+(.+):(\d+):(\d+)\n*/);
+				var _err=err.stack.match(/at.+?\((.+?:(\d+):(\d+))\)/);
 				if (_err) return {
 					msg:err.name+':'+err.message,
 					from:_err[1],
@@ -156,16 +200,16 @@
 			return 0;
 		},
 		log:function(){//log或充当统计代码
-				var agrs=[].slice.call(arguments,0),
-					logs={inspector:'user_log'};
-				if (!agrs.length) return false;
-				var strs=function(json){
-					var str=[];
-					for(var i=0;i<agrs.length;i++) str.push(json.stringify(agrs[i]));
-					return str.join('\n');
-				};
-				logs.msg=JSON?strs(JSON):agrs.join('');
-				this.report(logs);
+			var agrs=[].slice.call(arguments,0),
+				logs={inspector:'user_log'};
+			if (!agrs.length) return false;
+			var strs=function(json){
+				var str=[];
+				for(var i=0;i<agrs.length;i++) str.push(json.stringify(agrs[i]));
+				return str.join('\n');
+			};
+			logs.msg=JSON?strs(JSON):agrs.join('');
+			this.report(logs);
 		},
 		report:function(qs){
 			var conf=this.getConfs();
@@ -173,23 +217,89 @@
 			//由于entend对原对象不可更改，所以默认值依然存在，而不是一起被置为空！！！！！
 			if (conf.url=='') conf.url=this.Config.url=this.defConfs.url;
 			var q=util.extend(this.getQuery().qs,qs);
+			this.errs.push(q);
 			if (this.IsIgnoreTars(qs)) return false;
 			if (this.IsIgnoreMsgs(qs)) return false;
 			var qs=util.stringifyQuery(q);
 			// if (qs&&window.console) console.error('ErrorInspector report：'+qs);
 			if (conf.submit&&util.getArgType(conf.submit)=='function') {
-				conf.submit(qs);
+				conf.submit.call(this,q,qs,this.errs);
 				return false;
 			};
 			new Image().src=conf.url+(/.+\/\w+\?.*/i.test(conf.url)?'&':'?')+qs;
 		},
 		tryit:function(fn){
+			if (util.getArgType(fn)!=='function') throw '[tryit]fn should be a function';
 			try{
 				fn&&fn.call(ErrorInspector);
 			}catch(e){
 				if (!this.defConfs.IgnoreBrowserError&&window.console) console.error(e);
 				this.report(util.extend(this.parseErrorStack(e),{inspector:'user_try'}));
 			}
+		},
+		showErrors:function(errs) {
+			var eicontainor=document.getElementById('ei-containor');
+			if (eicontainor) document.body.removeChild(eicontainor);
+			if (!errs.length) return;
+			if (this.timer) clearTimeout(this.timer);
+			var str=[];
+	    	for(var i=0;i<errs.length;i++){
+	    		var _str=[];
+	    		for(var e in errs[i]){
+	    			_str.push('<b>'+e+'</b>:'+(e==='msg'?'<span style="color:red;">'+errs[i][e]+'</span>':errs[i][e]));
+	    		}
+	    		str.push('<div style="border-bottom:1px solid #eee;word-break: break-all;line-height: 20px;padding: 5px 10px;">'+_str.join('<br/>')+'</div>');
+	    	} 
+	    	var ei={
+	    		cont:{
+	    			opacity:0,
+	    			transition:'all .35s ease-out',
+	    			'-webkit-transition':'all .35s ease-out',
+	    			position:'fixed',
+	    			zIndex:'9999999',
+	    			background:'#fff',
+	    			bottom:'-258px',
+	    			left:0,
+	    			right:0,
+	    			height:'258px',
+	    			borderTop:'1px solid #eee',
+	    			fontSize:'12px'
+	    		},
+	    		hd:{
+	    			height:'26px',
+	    			lineHeight:'26px',
+	    			borderBottom:'1px solid #eee',
+	    			background:'#f8f8f8',
+	    			color:'#666'
+	    		},
+	    		bd:{
+	    			height:'231px',
+	    			overflow:'auto',
+	    			color:'#555'
+	    		}
+	    	}
+	    	var EIcont=document.createElement('div');
+	    	var EIhd=document.createElement('div');
+	    	var EIbd=document.createElement('div');
+	    	EIcont.id='ei-containor';
+	    	EIhd.innerHTML='<b style="float:left;color:#86799A;padding-left:11px;">ErrorInspector '+version+'</b><div id="ei-close" style="cursor:pointer;float:right;text-align: center;width: 40px;font-size: 16px;color: #888;">×</div>';
+	    	EIcont.style.cssText=util.cssTextify(ei.cont);
+	    	EIhd.style.cssText=util.cssTextify(ei.hd);
+	    	EIbd.style.cssText=util.cssTextify(ei.bd);
+	    	EIbd.innerHTML=str.join('');
+	    	EIcont.appendChild(EIhd);
+	    	EIcont.appendChild(EIbd);
+	    	document.body.appendChild(EIcont);
+	    	document.getElementById('ei-close').onclick=function(){
+	    		var eicontainor=document.getElementById('ei-containor');
+	    		eicontainor.style.bottom='-259px';
+	    		eicontainor.style.opacity=0;
+	    	}
+	    	this.timer=setTimeout(function(){
+	    		var eicontainor=document.getElementById('ei-containor');
+	    		eicontainor.style.bottom=0;
+	    		eicontainor.style.opacity=1;
+	    	},350);
 		}
 	};
 	win.onerror=function(err,url,row,col,error){
@@ -205,9 +315,13 @@
 		if (!confs.IgnoreBrowserError&&window.console) console.error(error);
 		return confs.IgnoreBrowserError;
 	}
-	win.Tryit=function(fn){
-        ErrorInspector.tryit(fn);
-    }
+
+	win.Tryit=
+	win.tryCatch=
+	win.try_catch=function(fn) {
+		ErrorInspector.tryit.call(ErrorInspector,fn);
+	};
+
     if(window.$){
         $(function(){
             var setajax=ErrorInspector.getConfs();
