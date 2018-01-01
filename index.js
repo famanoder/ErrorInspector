@@ -59,7 +59,7 @@
 			if (isChrome) return 'Chrome/'+isChrome[1];
 			var isFirefox=ua.match(/firefox\/(\d+\.\d+)/i);
 			if (isFirefox) return 'Firefox/'+isFirefox[1];
-			var isSafari=ua.match(/\w+\/(\d+(?:\.\d*)?)\ssafari/i);
+			var isSafari=ua.match(/\w+\/([\d.]+)\ssafari/i);
 			if (isSafari) return 'Safari/'+isSafari[1];
 			var isIE=ua.match(/msie\s(\d+)/i);
 			if (isIE) return 'IE/'+isIE[1];
