@@ -32,7 +32,7 @@
 	var util=function(){
 		var getArgType=function(arg){
 			return Object.prototype.toString.call(arg).match(/\s(\w+)/)[1].toLowerCase();
-		}
+		} 
 		var extend=function(){
 			// extend(target,{},{},...)
 			var objs=arguments;
